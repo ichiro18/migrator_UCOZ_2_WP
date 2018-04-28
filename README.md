@@ -1,2 +1,2 @@
 # Migrator UCOZ to WP
-> Project Description
+> Tool for migrate content from UCOZ to Wordpress

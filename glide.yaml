@@ -1,0 +1,10 @@
+package: github.com/ichiro18/migrator_UCOZ_2_WP
+homepage: https://github.com/ichiro18/migrator_UCOZ_2_WP
+license: MIT
+owners:
+- name: Ilya Zhuravlev
+  email: ichirozcom@gmail.com
+  homepage: https://github.com/ichiro18
+import:
+- package: github.com/spf13/viper
+  version: ^1.0.2

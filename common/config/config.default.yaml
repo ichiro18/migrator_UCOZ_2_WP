@@ -1,0 +1,5 @@
+wordpress:
+- path: "../wordpress/"
+
+ucoz:
+- path: "../ucoz/"

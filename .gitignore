@@ -1,2 +1,10 @@
 # Code-editors
 .idea/
+
+# Config
+*.yaml
+!*.default.yaml
+
+# Vendoring
+vendor/
+glide.lock
