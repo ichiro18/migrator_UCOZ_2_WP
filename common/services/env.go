@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/afero"
 	"fmt"
 	"github.com/spf13/viper"
-	"bytes"
 )
 
 type Env struct {
@@ -24,21 +23,7 @@ func NewEnvService() *Env{
 	return &env
 }
 
-func (self *Env) LoadConfig() {
-	// Init filesystem
-	self.FileSystem = afero.NewOsFs()
-	// Init config
-	self.Config = viper.New()
-	// Get config file
-	self.Config.SetConfigType("yaml")
-	config := self.getConfigFile()
-	// Read Config
-	self.Config.ReadConfig(bytes.NewBuffer(config))
-
-	fmt.Printf("DATA: %v", self.Config.AllSettings())
-}
-
-func (self *Env) getConfigFile() []byte{
+func (self *Env) GetConfigFile() (File string, Path string){
 	// Find default configPath
 	isExistDefaultConfigPath, err := afero.DirExists(self.FileSystem, defaultConfigPath)
 	if err != nil{
@@ -68,17 +53,11 @@ func (self *Env) getConfigFile() []byte{
 
 		// Copy config file
 		defautConfig, err := afero.ReadFile(self.FileSystem, defaultConfigFile)
-		// TODO: Сделать обработку шаблонов для ввода значений из консоли
 		err = afero.WriteFile(self.FileSystem, mainConfigFile, defautConfig, 0777)
 		if err != nil {
 			fmt.Errorf("Can't copy config file fron default. ")
 		}
 	}
 
-	config, err := afero.ReadFile(self.FileSystem, mainConfigFile)
-	if err != nil {
-		fmt.Errorf("Can't open config file. ")
-	}
-
-	return config
+	return "config", defaultConfigPath
 }

@@ -1,10 +1,7 @@
 package main
 
-import (
-	"./common/services"
-)
+import "github.com/ichiro18/migrator_UCOZ_2_WP/console"
 
 func main() {
-	env := services.NewEnvService()
-	env.LoadConfig()
+	console.Execute()
 }

@@ -6,5 +6,6 @@
 !*.default.yaml
 
 # Vendoring
+!glide.yaml
 vendor/
 glide.lock
