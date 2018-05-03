@@ -5,11 +5,15 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/common/services"
+	"github.com/fatih/color"
 )
 
-var cfgFile string
+var (
+	Env *services.Env
+	// Флаги
+	cfgFile string
+)
 
 // RootCmd представляет базовую команду для вызова любых команд
 var RootCmd = &cobra.Command{
@@ -32,28 +36,26 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Устанавливаем глобальные флаги
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is common/config/.config.yaml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PROJECT/common/config/.config.yaml)")
 }
 
 // initConfig читает конфиги и ENV переменные.
 func initConfig() {
+	Env = services.NewEnvService()
 	if cfgFile != "" {
 		// Используем файл конфига, установленного в флаге
-		viper.SetConfigFile(cfgFile)
+		Env.Config.SetConfigFile(cfgFile)
 	} else {
+		config, configPath := Env.GetConfigFile()
 
-		env := services.NewEnvService()
-		config, configPath := env.GetConfigFile()
-
-		// Search config in home directory with name ".cobra-example" (without extension).
-		viper.AddConfigPath(configPath)
-		viper.SetConfigName(config)
+		Env.Config.AddConfigPath(configPath)
+		Env.Config.SetConfigName(config)
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	Env.Config.AutomaticEnv() // собираем переменные окружения ENV
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	// Если конфиг найден, читаем его
+	if err := Env.Config.ReadInConfig(); err == nil {
+		color.White("Using config file: %v", Env.Config.ConfigFileUsed())
 	}
 }

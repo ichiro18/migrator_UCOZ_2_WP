@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/afero"
 	"fmt"
 	"github.com/spf13/viper"
+	"github.com/fatih/color"
 )
 
 type Env struct {
@@ -19,11 +20,20 @@ var (
 
 func NewEnvService() *Env{
 	env := Env{}
-	//env.init()
+	env.init()
 	return &env
 }
 
+func (self *Env) init() {
+	self.FileSystem = afero.NewOsFs()
+	self.Config = viper.New()
+}
+
 func (self *Env) GetConfigFile() (File string, Path string){
+	if self.FileSystem == nil {
+		color.Yellow("FileSystem not found. Loading...")
+		self.FileSystem = afero.NewOsFs()
+	}
 	// Find default configPath
 	isExistDefaultConfigPath, err := afero.DirExists(self.FileSystem, defaultConfigPath)
 	if err != nil{
@@ -60,4 +70,16 @@ func (self *Env) GetConfigFile() (File string, Path string){
 	}
 
 	return "config", defaultConfigPath
+}
+
+func (self *Env) Load() {
+	config, configPath := self.GetConfigFile()
+
+	self.Config.AddConfigPath(configPath)
+	self.Config.SetConfigName(config)
+	self.Config.AutomaticEnv()
+
+	if err := self.Config.ReadInConfig(); err != nil {
+		fmt.Errorf("Can't read config. ")
+	}
 }

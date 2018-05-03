@@ -9,3 +9,6 @@
 !glide.yaml
 vendor/
 glide.lock
+
+# Project Specifyc
+ucoz/backup/
