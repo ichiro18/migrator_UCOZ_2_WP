@@ -1,40 +1,46 @@
 package ucoz
 
 import (
-	"github.com/spf13/cobra"
 	"fmt"
+	"strings"
+
+	"path/filepath"
+
+	table "github.com/crackcomm/go-clitable"
+	"github.com/fatih/color"
+	"github.com/fatih/structs"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/common/services"
 	"github.com/spf13/afero"
-	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 )
 
 type ucozFileStruct struct {
-	Site    		StructItem `default: Name>_s1`	//Базы данных категорий, материалов, пользователей 		"_s1"
-	Board 			StructItem `default: Name>_bd`  //Файлы модуля «Доска объявлений» (board) 				"_bd"
-	Blog			StructItem `default: Name>_bl`  //Файлы модуля «Блог» (blog) 							"_bl"
-	SiteCatalog		StructItem `default: Name>_dr`  //Файлы модуля «Каталог сайтов» (dir)					"_dr"
-	FAQ				StructItem `default: Name>_fq`	//Файлы модуля «FAQ» (faq)								"_fq"
-	Forum			StructItem `default: Name>_fr`	//Файлы модуля «Форум» (forum)							"_fr"
-	FileCatalog		StructItem `default: Name>_ld`	//Файлы модуля «Каталог файлов» (load)					"_ld"
-	News			StructItem `default: Name>_nw`	//Файлы модуля «Новости» (news)							"_nw"
-	Photo			StructItem `default: Name>_ph`	//Файлы модуля «Фотоальбом» (photo)						"_ph"
-	Article			StructItem `default: Name>_pu`	//Файлы модуля «Каталог статей» (publ)					"_pu"
-	Games			StructItem `default: Name>_sf`	//Файлы модуля «Онлайн-игры» (stuff)					"_sf"
-	Shop			StructItem `default: Name>_sh`	//Файлы модуля «Интернет-магазин» (shop)				"_sh"
-	Pages			StructItem `default: Name>_si`	//Файлы модуля «Страницы» (index)						"_si"
-	Styles			StructItem `default: Name>_st`	//Файлы стилей (my.css)									"_st"
-	Video			StructItem `default: Name>_vi`	//Файлы модуля «Видео» (video)							"_vi"
+	Site        *StructItem `default:"folder:_s1;description:Базы данных категорий, материалов, пользователей"`
+	Board       *StructItem `default:"folder:_bd;description:Файлы модуля «Доска объявлений» (board)"`
+	Blog        *StructItem `default:"folder:_bl;description:Файлы модуля «Блог» (blog)"`
+	SiteCatalog *StructItem `default:"folder:_dr;description:Файлы модуля «Каталог сайтов» (dir)"`
+	FAQ         *StructItem `default:"folder:_fq;description:Файлы модуля «FAQ» (faq)"`
+	Forum       *StructItem `default:"folder:_fr;description:Файлы модуля «Форум» (forum)"`
+	FileCatalog *StructItem `default:"folder:_ld;description:Файлы модуля «Каталог файлов» (load)"`
+	News        *StructItem `default:"folder:_nw;description:Файлы модуля «Новости» (news)"`
+	Photo       *StructItem `default:"folder:_ph;description:Файлы модуля «Фотоальбом» (photo)"`
+	Article     *StructItem `default:"folder:_pu;description:Файлы модуля «Каталог статей» (publ)"`
+	Games       *StructItem `default:"folder:_sf;description:Файлы модуля «Онлайн-игры» (stuff)"`
+	Shop        *StructItem `default:"folder:_sh;description:Файлы модуля «Интернет-магазин» (shop)"`
+	Pages       *StructItem `default:"folder:_si;description:Файлы модуля «Страницы» (index)"`
+	Styles      *StructItem `default:"folder:_st;description:Файлы стилей (my.css)"`
+	Video       *StructItem `default:"folder:_vi;description:Файлы модуля «Видео» (video)"`
 }
 
 type StructItem struct {
-	Name 	string
-	Status 	bool
-	Folder	string
-	File	string
+	Name        string
+	Status      bool
+	Description string
+	Folder      string
+	Path        string
 }
 
 var Env *services.Env
-
 var CheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Validate ucoz files",
@@ -42,31 +48,30 @@ var CheckCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config := Env.Config.GetStringMapString("ucoz")
 		ucozPath := checkFolder(config["path"])
-		createDefaultStruct()
-		//checkBackup(ucozPath+"backup/")
-		fmt.Printf("Inside subCmd Run with args: %v\n", ucozPath+"backup/")
+		structure := createDefaultStruct()
+		UcozFileStruct = checkBackup(ucozPath+"backup/", structure)
 	},
 }
+var UcozFileStruct *ucozFileStruct
 
-func checkFolder(path string) string{
+func checkFolder(path string) string {
 	isExistFolder, err := afero.DirExists(Env.FileSystem, path)
-	if err != nil{
+	if err != nil {
 		fmt.Errorf("Can't check config path. ")
 	}
-	if !isExistFolder{
+	if !isExistFolder {
 		color.Yellow("Ucoz folder is exist. Creating...")
 		Env.FileSystem.Mkdir(path, 0755)
 	}
 	return path
 }
 
-func checkBackup(path string) bool {
+func checkBackup(path string, structure *ucozFileStruct) *ucozFileStruct {
 	isExistFolder, err := afero.DirExists(Env.FileSystem, path)
-	if err != nil{
+	if err != nil {
 		fmt.Errorf("Can't check config path. ")
-		return false
 	}
-	if !isExistFolder{
+	if !isExistFolder {
 		color.Yellow("Backup folder is exist. Creating...")
 		Env.FileSystem.Mkdir(path, 0755)
 	}
@@ -74,18 +79,122 @@ func checkBackup(path string) bool {
 	files, err := afero.ReadDir(Env.FileSystem, path)
 	if err != nil {
 		fmt.Errorf("Can't read backup dir. ")
-		return false
 	}
-	for _, val := range files{
-		if val.IsDir() {
-			color.Red("Files: %v", val.Name())
+
+	tableOut := table.New([]string{"Name", "Status", "Description", "Folder", "Path"})
+
+	ucoz := structs.New(structure)
+	for _, field := range ucoz.Fields() {
+		s := structs.New(field.Value())
+		s.Field("Path").Set("-")
+		for _, val := range files {
+			// Only folder
+			if val.IsDir() {
+				if val.Name() == s.Field("Folder").Value() {
+					s.Field("Status").Set(true)
+					dirPath := filepath.Join(path, val.Name())
+					isEmptyChild, err := afero.IsEmpty(Env.FileSystem, dirPath)
+					if err != nil {
+						fmt.Errorf("Can't read %v dir. ", dirPath)
+					}
+					if !isEmptyChild {
+						s.Field("Path").Set(dirPath)
+					}
+				}
+			}
 		}
+
+		m := s.Map()
+		tableOut.AddRow(m)
 	}
-	return true
+
+	tableOut.Print()
+	return structure
 }
 
-func createDefaultStruct(){
-	ucoz := new(ucozFileStruct)
+func createDefaultStruct() *ucozFileStruct {
+	ucozS := new(ucozFileStruct)
+	s := structs.New(ucozS)
 
-	fmt.Println(ucoz)
+	m := s.Map()
+	for index, _ := range m {
+		field := s.Field(index)
+		item := new(StructItem)
+		defaultValuesString := field.Tag("default")
+		type defaults struct {
+			Folder      string
+			Description string
+		}
+		defaultValuesArr := strings.Split(defaultValuesString, ";")
+		dv := defaults{}
+		for _, val := range defaultValuesArr {
+			t := strings.Split(val, ":")
+			name := strings.Title(t[0])
+			value := strings.Title(t[1])
+			if name == "Folder" {
+				dv.Folder = value
+			}
+			if name == "Description" {
+				dv.Description = value
+			}
+		}
+		// Name
+		item.Name = field.Name()
+		// Description
+		item.Description = dv.Description
+		// Folder
+		item.Folder = dv.Folder
+		// Status
+		item.Status = false
+
+		switch field.Name() {
+		case "Site":
+			ucozS.Site = item
+			break
+		case "Board":
+			ucozS.Board = item
+			break
+		case "Blog":
+			ucozS.Blog = item
+			break
+		case "SiteCatalog":
+			ucozS.SiteCatalog = item
+			break
+		case "FAQ":
+			ucozS.FAQ = item
+			break
+		case "Forum":
+			ucozS.Forum = item
+			break
+		case "FileCatalog":
+			ucozS.FileCatalog = item
+			break
+		case "News":
+			ucozS.News = item
+			break
+		case "Photo":
+			ucozS.Photo = item
+			break
+		case "Article":
+			ucozS.Article = item
+			break
+		case "Games":
+			ucozS.Games = item
+			break
+		case "Shop":
+			ucozS.Shop = item
+			break
+		case "Pages":
+			ucozS.Pages = item
+			break
+		case "Styles":
+			ucozS.Styles = item
+			break
+		case "Video":
+			ucozS.Video = item
+			break
+		}
+	}
+
+	return ucozS
 }
