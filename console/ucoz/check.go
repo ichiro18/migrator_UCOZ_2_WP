@@ -6,6 +6,8 @@ import (
 
 	"path/filepath"
 
+	"encoding/json"
+
 	table "github.com/crackcomm/go-clitable"
 	"github.com/fatih/color"
 	"github.com/fatih/structs"
@@ -49,10 +51,20 @@ var CheckCmd = &cobra.Command{
 		config := Env.Config.GetStringMapString("ucoz")
 		ucozPath := checkFolder(config["path"])
 		structure := createDefaultStruct()
-		UcozFileStruct = checkBackup(ucozPath+"backup/", structure)
+		UcozFileStruct = checkBackup(filepath.Join(ucozPath, "backup"), structure, true)
+		saveFileStruct(UcozFileStruct, filepath.Join(ucozPath, "work"))
 	},
 }
 var UcozFileStruct *ucozFileStruct
+
+func NewUcozStructure() *ucozFileStruct {
+	config := Env.Config.GetStringMapString("ucoz")
+	ucozPath := checkFolder(config["path"])
+	structure := createDefaultStruct()
+	UcozFileStruct = checkBackup(filepath.Join(ucozPath, "backup"), structure, false)
+	saveFileStruct(UcozFileStruct, filepath.Join(ucozPath, "work"))
+	return UcozFileStruct
+}
 
 func checkFolder(path string) string {
 	isExistFolder, err := afero.DirExists(Env.FileSystem, path)
@@ -66,7 +78,7 @@ func checkFolder(path string) string {
 	return path
 }
 
-func checkBackup(path string, structure *ucozFileStruct) *ucozFileStruct {
+func checkBackup(path string, structure *ucozFileStruct, print bool) *ucozFileStruct {
 	isExistFolder, err := afero.DirExists(Env.FileSystem, path)
 	if err != nil {
 		fmt.Errorf("Can't check config path. ")
@@ -108,7 +120,9 @@ func checkBackup(path string, structure *ucozFileStruct) *ucozFileStruct {
 		tableOut.AddRow(m)
 	}
 
-	tableOut.Print()
+	if print {
+		tableOut.Print()
+	}
 	return structure
 }
 
@@ -197,4 +211,14 @@ func createDefaultStruct() *ucozFileStruct {
 	}
 
 	return ucozS
+}
+
+func saveFileStruct(structure *ucozFileStruct, path string) {
+	data := structs.New(structure)
+	dataMap := data.Map()
+	dataJson, err := json.MarshalIndent(dataMap, " ", "  ")
+	if err != nil {
+		fmt.Errorf("Can't convert data to json. ")
+	}
+	afero.WriteFile(Env.FileSystem, filepath.Join(path, "struct.json"), dataJson, 0755)
 }
