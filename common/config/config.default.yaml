@@ -1,5 +1,4 @@
 wordpress:
-  path: ../wordpress/
-
+  path: "wordpress/"
 ucoz:
-  path: ../ucoz/
+  path: "ucoz/"

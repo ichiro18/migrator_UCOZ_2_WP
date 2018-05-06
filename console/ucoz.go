@@ -1,7 +1,6 @@
 package console
 
 import (
-	"github.com/fatih/color"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/common/services"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/console/ucoz"
 	"github.com/spf13/cobra"
@@ -16,12 +15,9 @@ var ucozCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(ucozCmd)
-
-	color.Yellow("==== UCOZ interface ====")
 	// Load ENV
 	env := services.NewEnvService()
 	env.Load()
-
 	//	Set config
 	if ucoz.Env == nil {
 		ucoz.Env = env

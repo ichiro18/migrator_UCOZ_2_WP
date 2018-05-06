@@ -5,11 +5,9 @@ import (
 
 	"fmt"
 
-	"strings"
-
-	"github.com/fatih/color"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 var NewsCmd = &cobra.Command{
@@ -27,35 +25,17 @@ type Site struct {
 }
 
 type NewItem struct {
-	id       string
-	catID    string
-	year     string
-	month    string
-	day      string
-	pending  string
-	ontop    string
-	com_may  string
-	addtime  string
-	num_com  string
-	author   string
-	title    string
-	brief    string
-	message  string
-	attach   string
-	files    string
-	reads    string
-	rating   string
-	rate_num string
-	rate_sum string
-	rate_ip  string
-	other1   string
-	other2   string
-	other3   string
-	other4   string
-	other5   string
-	uid      string
-	sbscr    string
-	lastmod  string
+	ID			string
+	CAT_ID			string
+	URL_YEAR			string
+	URL_MONTH			string
+	URL_DAY			string
+	TITLE			string
+	SNIPPET			string
+	MESSAGE 			string
+	ATTACHMENTS			string
+	VIEWS_COUNT			string
+	URL_ALIAS			string
 }
 
 func (self *Site) parseNews(path string) {
@@ -76,18 +56,30 @@ func (self *Site) Load(path string) {
 	if err != nil {
 		fmt.Errorf("Can't read news.txt file. ")
 	}
-	elems := strings.Split(string(file), "|")
+	// Удаляем пробелы с конца и начала файла
+	data := strings.TrimSpace(string(file))
+	//// Экранированные переносы строк
+	data = strings.Replace(data, "\\\n", " ", -1)
+	// Получаем новости
+	elems := strings.Split(data, "\n")
 
-	color.Red("SUM: %v", len(elems))
-	ND(len(elems))
+	for _, val := range elems{
+		dataItem := strings.Replace(val, "\\\t", "", -1)
+		item := strings.Split(dataItem, "|")
+		newsItem := NewItem{
+			ID: 		item[0],
+			CAT_ID:		item[1],
+			URL_YEAR:   item[2],
+			URL_MONTH:  item[3],
+			URL_DAY:   	item[4],
+			TITLE:   	item[11],
+			MESSAGE:   	item[13],
+		}
+		self.News = append(self.News, newsItem)
+	}
 }
 
-func ND(sum int) {
-	for i := 1; i < sum; i++ {
-		del := sum / i
-		ost := sum % i
-		if (ost == 0) && (del != 1) && (del != sum) {
-			color.Red("DEL: %v", del)
-		}
-	}
+func GetNews() {
+	site := new(Site)
+	site.parseNews(UcozFileStruct.Site.Path)
 }
