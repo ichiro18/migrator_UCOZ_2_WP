@@ -1,4 +1,12 @@
 wordpress:
-  path: "wordpress/"
+  path: ./wordpress/
+  database_protocol: tcp
+  database_address: ip_address
+  database_port: 3306
+  database_host: localhost
+  database_name: database_name
+  database_login: database_login
+  database_password: database_password
+
 ucoz:
-  path: "ucoz/"
+  path: ./ucoz/

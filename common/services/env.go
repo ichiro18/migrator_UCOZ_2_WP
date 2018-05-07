@@ -1,24 +1,27 @@
 package services
 
 import (
-	"github.com/spf13/afero"
 	"fmt"
-	"github.com/spf13/viper"
+
 	"github.com/fatih/color"
+	"github.com/jinzhu/gorm"
+	"github.com/spf13/afero"
+	"github.com/spf13/viper"
 )
 
 type Env struct {
-	FileSystem 		afero.Fs
-	Config			*viper.Viper
+	FileSystem afero.Fs
+	Config     *viper.Viper
+	Database   *gorm.DB
 }
 
 var (
 	defaultConfigPath = "./common/config/"
-	mainConfigFile = defaultConfigPath + "config.yaml"
+	mainConfigFile    = defaultConfigPath + "config.yaml"
 	defaultConfigFile = defaultConfigPath + "config.default.yaml"
 )
 
-func NewEnvService() *Env{
+func NewEnvService() *Env {
 	env := Env{}
 	env.init()
 	return &env
@@ -29,14 +32,14 @@ func (self *Env) init() {
 	self.Config = viper.New()
 }
 
-func (self *Env) GetConfigFile() (File string, Path string){
+func (self *Env) GetConfigFile() (File string, Path string) {
 	if self.FileSystem == nil {
 		color.Yellow("FileSystem not found. Loading...")
 		self.FileSystem = afero.NewOsFs()
 	}
 	// Find default configPath
 	isExistDefaultConfigPath, err := afero.DirExists(self.FileSystem, defaultConfigPath)
-	if err != nil{
+	if err != nil {
 		fmt.Errorf("Can't check config path. ")
 	}
 	if !isExistDefaultConfigPath {
@@ -47,17 +50,17 @@ func (self *Env) GetConfigFile() (File string, Path string){
 
 	// Find config
 	isExistConfigFile, err := afero.Exists(self.FileSystem, mainConfigFile)
-	if err != nil{
+	if err != nil {
 		fmt.Errorf("Can't check config file. ")
 	}
-	if !isExistConfigFile{
+	if !isExistConfigFile {
 		// Find default config
 		isExistDefaultConfigFile, err := afero.Exists(self.FileSystem, defaultConfigFile)
-		if err != nil{
+		if err != nil {
 			fmt.Errorf("Can't check default config file. ")
 		}
 
-		if !isExistDefaultConfigFile{
+		if !isExistDefaultConfigFile {
 			fmt.Errorf("Default config file is not exist. ")
 		}
 

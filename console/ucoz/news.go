@@ -5,9 +5,10 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 var NewsCmd = &cobra.Command{
@@ -25,17 +26,17 @@ type Site struct {
 }
 
 type NewItem struct {
-	ID			string
-	CAT_ID			string
-	URL_YEAR			string
-	URL_MONTH			string
-	URL_DAY			string
-	TITLE			string
-	SNIPPET			string
-	MESSAGE 			string
-	ATTACHMENTS			string
-	VIEWS_COUNT			string
-	URL_ALIAS			string
+	ID          string
+	CAT_ID      string
+	URL_YEAR    string
+	URL_MONTH   string
+	URL_DAY     string
+	TITLE       string
+	SNIPPET     string
+	MESSAGE     string
+	ATTACHMENTS string
+	VIEWS_COUNT string
+	URL_ALIAS   string
 }
 
 func (self *Site) parseNews(path string) {
@@ -63,17 +64,17 @@ func (self *Site) Load(path string) {
 	// Получаем новости
 	elems := strings.Split(data, "\n")
 
-	for _, val := range elems{
+	for _, val := range elems {
 		dataItem := strings.Replace(val, "\\\t", "", -1)
 		item := strings.Split(dataItem, "|")
 		newsItem := NewItem{
-			ID: 		item[0],
-			CAT_ID:		item[1],
-			URL_YEAR:   item[2],
-			URL_MONTH:  item[3],
-			URL_DAY:   	item[4],
-			TITLE:   	item[11],
-			MESSAGE:   	item[13],
+			ID:        item[0],
+			CAT_ID:    item[1],
+			URL_YEAR:  item[2],
+			URL_MONTH: item[3],
+			URL_DAY:   item[4],
+			TITLE:     item[11],
+			MESSAGE:   item[13],
 		}
 		self.News = append(self.News, newsItem)
 	}

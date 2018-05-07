@@ -17,3 +17,7 @@ import:
 - package: github.com/crackcomm/go-clitable
 - package: github.com/fatih/structs
   version: ^1.0.0
+- package: github.com/jinzhu/gorm
+  version: ^1.9.1
+- package: github.com/go-sql-driver/mysql
+  version: ^1.3.0
