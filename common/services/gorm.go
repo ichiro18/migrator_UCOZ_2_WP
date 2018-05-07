@@ -32,7 +32,7 @@ func NewConnectORM(cfg map[string]string) *gorm.DB {
 }
 
 func ConnectORM(cfg *Config) *gorm.DB {
-	connectOption := cfg.Login + ":" + cfg.Password + "@" + cfg.Protocol + "(" + cfg.Address + ":" + cfg.Port + ")/" + cfg.Database + "?charset=utf8"
+	connectOption := cfg.Login + ":" + cfg.Password + "@" + cfg.Protocol + "(" + cfg.Address + ":" + cfg.Port + ")/" + cfg.Database + "?charset=utf8&parseTime=true"
 	db, err := gorm.Open("mysql", connectOption)
 	if err != nil {
 		fmt.Errorf("Unable connect to GORM database")
