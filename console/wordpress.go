@@ -28,4 +28,5 @@ func init() {
 	// === Child ===
 	// Check
 	wordpressCmd.AddCommand(wordpress.CheckCmd)
+	wordpressCmd.AddCommand(wordpress.PostCmd)
 }

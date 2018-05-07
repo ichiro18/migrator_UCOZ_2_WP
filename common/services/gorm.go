@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 
-	"github.com/fatih/color"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
@@ -33,12 +32,10 @@ func NewConnectORM(cfg map[string]string) *gorm.DB {
 }
 
 func ConnectORM(cfg *Config) *gorm.DB {
-	connectOption := cfg.Login + ":" + cfg.Password + "@" + cfg.Protocol + "(" + cfg.Address + ":" + cfg.Port + ")/" + cfg.Database + "?charset=utf8&tls=skip-verify"
-	color.Yellow("%v", connectOption)
+	connectOption := cfg.Login + ":" + cfg.Password + "@" + cfg.Protocol + "(" + cfg.Address + ":" + cfg.Port + ")/" + cfg.Database + "?charset=utf8"
 	db, err := gorm.Open("mysql", connectOption)
-	if err != nil || db == nil {
+	if err != nil {
 		fmt.Errorf("Unable connect to GORM database")
 	}
-
 	return db
 }
