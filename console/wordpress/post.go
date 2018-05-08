@@ -20,6 +20,7 @@ import (
 	"github.com/ichiro18/migrator_UCOZ_2_WP/common/services"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/console/ucoz"
 	"github.com/jinzhu/gorm"
+	"github.com/schollz/progressbar"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -133,16 +134,21 @@ func uploadNews() {
 
 	db := checkDB()
 	tx := db.Begin()
+
+	count := len(news)
+	bar := progressbar.New(count)
 	for _, val := range news {
+		bar.Add(1)
 		lastID = lastID + 1
 		post := convertUcozNewToWordpressPost(lastID, &val)
 		postList = append(postList, post)
 		postIDs = append(postIDs, post.ID)
-		color.Yellow("create post ID=%v", post.ID)
+		color.Yellow("create post ID=%v \n", post.ID)
 		if err := tx.Create(&post).Error; err != nil {
 			tx.Rollback()
 			fmt.Errorf("Can't create post: %v", err.Error())
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	err := tx.Commit().Error
@@ -278,9 +284,9 @@ func translite(str string) string {
 func updateMediaPath(data *ucoz.NewItem) string {
 	var res string
 	item := data.MESSAGE
-	indexMedia := strings.Index(item, `src="`)
+	indexMedia := strings.Count(item, `src="`)
 	if indexMedia != -1 {
-		for i := 1; i < indexMedia; i++ {
+		for i := 0; i < indexMedia; i++ {
 			index := strings.Index(item, `src="`)
 			srcIndex := index + 5
 			var src string
@@ -293,13 +299,18 @@ func updateMediaPath(data *ucoz.NewItem) string {
 				src = srcPart[:srcIndexEnd]
 			}
 			if src != "" {
-				newSrc := copyMedia(src, data)
+				hasUrl := strings.Index(src, "http")
+				hasLocal := strings.Index(src, "c:/TMP")
+				isWpPath := strings.Index(src, "wp-content")
+				if hasUrl == -1 && hasLocal == -1 && isWpPath == -1 {
+					newSrc := copyMedia(src, data)
 
-				// Replace String
-				before := item[:srcIndexStart]
-				strStart := item[srcIndexStart:]
-				after := strStart[srcIndexEnd:]
-				res = before + newSrc + after
+					// Replace String
+					before := item[:srcIndexStart]
+					strStart := item[srcIndexStart:]
+					after := strStart[srcIndexEnd:]
+					res = before + newSrc + after
+				}
 			}
 			if res == "" {
 				fmt.Errorf("Can't update media path. ")
@@ -330,7 +341,13 @@ func copyMedia(mediaPath string, item *ucoz.NewItem) string {
 	contentFolder := checkFolder(path.Join(wpPath, "wp-content"))
 	uploadFolder := checkFolder(path.Join(contentFolder, "uploads"))
 	yearFolder := checkFolder(path.Join(uploadFolder, item.URL_YEAR))
-	postFolder := checkFolder(path.Join(yearFolder, "posts"))
+	var month string
+	if len(item.URL_MONTH) == 1 {
+		month = "0" + item.URL_MONTH
+	} else {
+		month = item.URL_MONTH
+	}
+	postFolder := checkFolder(path.Join(yearFolder, month))
 
 	// Copy mediaFile
 	image, err := afero.ReadFile(Env.FileSystem, filePath)

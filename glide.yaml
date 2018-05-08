@@ -24,3 +24,5 @@ import:
 - package: github.com/fiam/gounidecode
   subpackages:
   - unidecode
+- package: github.com/schollz/progressbar
+  version: ^1.0.0
