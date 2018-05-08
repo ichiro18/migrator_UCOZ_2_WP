@@ -2,6 +2,7 @@ package wordpress
 
 import (
 	"fmt"
+	"regexp"
 
 	"strconv"
 
@@ -15,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/fiam/gounidecode/unidecode"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/common/services"
 	"github.com/ichiro18/migrator_UCOZ_2_WP/console/ucoz"
 	"github.com/jinzhu/gorm"
@@ -178,13 +180,13 @@ func convertUcozNewToWordpressPost(startID int, newItem *ucoz.NewItem) Post {
 		Author:       1,
 		Date:         date,
 		DateGmt:      date,
-		Content:      newItem.MESSAGE,
+		Content:      updateMediaPath(newItem),
 		Title:        newItem.TITLE,
 		Status:       "publish",
 		Type:         "post",
 		Comment:      "open",
 		Ping:         "open",
-		Name:         newItem.TITLE,
+		Name:         translite(newItem.TITLE),
 		Modified:     date,
 		ModifiedGMT:  date,
 		Guid:         "http://u0500614.isp.regruhosting.ru/?p=" + strconv.Itoa(startID),
@@ -255,4 +257,91 @@ func clearPost() {
 
 func (p Post) TableName() string {
 	return "wp_posts"
+}
+
+func translite(str string) string {
+	// Русские буквы в латиницу
+	res := unidecode.Unidecode(str)
+	// в нижний регистр
+	res = strings.ToLower(res)
+	res = strings.Replace(res, " - ", " ", -1)
+	res = strings.Replace(res, " ", "-", -1)
+	// убираем ненужные символы
+	reg, err := regexp.Compile("[^a-z,A-Z,0-9,-]+")
+	if err != nil {
+		fmt.Errorf("Can't remove symbols. ")
+	}
+	res = reg.ReplaceAllString(res, "")
+	return res
+}
+
+func updateMediaPath(data *ucoz.NewItem) string {
+	var res string
+	item := data.MESSAGE
+	indexMedia := strings.Index(item, `src="`)
+	if indexMedia != -1 {
+		for i := 1; i < indexMedia; i++ {
+			index := strings.Index(item, `src="`)
+			srcIndex := index + 5
+			var src string
+			var srcIndexStart int
+			var srcIndexEnd int
+			if srcIndex != -1 {
+				srcIndexEnd = strings.Index(item[srcIndex:], string('"'))
+				srcPart := item[srcIndex:]
+				srcIndexStart = srcIndex
+				src = srcPart[:srcIndexEnd]
+			}
+			if src != "" {
+				newSrc := copyMedia(src, data)
+
+				// Replace String
+				before := item[:srcIndexStart]
+				strStart := item[srcIndexStart:]
+				after := strStart[srcIndexEnd:]
+				res = before + newSrc + after
+			}
+			if res == "" {
+				fmt.Errorf("Can't update media path. ")
+			}
+			item = res
+		}
+
+	} else {
+		res = data.MESSAGE
+	}
+
+	return res
+}
+func copyMedia(mediaPath string, item *ucoz.NewItem) string {
+	ucozPath := Env.Config.GetStringMapString("ucoz")
+	filePath := path.Join(ucozPath["path"], "backup", mediaPath)
+	_, fileName := path.Split(filePath)
+	isEmptyFile, err := afero.IsEmpty(Env.FileSystem, filePath)
+	if err != nil {
+		fmt.Errorf("Can't check file. ")
+	}
+
+	if isEmptyFile {
+		fmt.Errorf("File is not exist. ")
+	}
+	wpConfig := Env.Config.GetStringMapString("wordpress")
+	wpPath := wpConfig["path"]
+	contentFolder := checkFolder(path.Join(wpPath, "wp-content"))
+	uploadFolder := checkFolder(path.Join(contentFolder, "uploads"))
+	yearFolder := checkFolder(path.Join(uploadFolder, item.URL_YEAR))
+	postFolder := checkFolder(path.Join(yearFolder, "posts"))
+
+	// Copy mediaFile
+	image, err := afero.ReadFile(Env.FileSystem, filePath)
+	resultFilePath := path.Join(postFolder, fileName)
+	err = afero.WriteFile(Env.FileSystem, resultFilePath, image, 0777)
+	if err != nil {
+		fmt.Errorf("Can't copy file. ")
+	}
+
+	// Save relative Path for image
+	urlPath := strings.Replace(resultFilePath, "wordpress", "", 1)
+
+	return urlPath
 }

@@ -21,3 +21,6 @@ import:
   version: ^1.9.1
 - package: github.com/go-sql-driver/mysql
   version: ^1.3.0
+- package: github.com/fiam/gounidecode
+  subpackages:
+  - unidecode
