@@ -31,7 +31,6 @@ func checkFolder(path string) string {
 		color.Yellow("Wordpress folder is exist. Creating...")
 		Env.FileSystem.Mkdir(path, 0755)
 	}
-	color.Green("Wordpress folder is created")
 	return path
 }
 
