@@ -62,8 +62,9 @@ type Thumbnail struct {
 }
 
 var (
-	list  bool
-	clear bool
+	list        bool
+	clear       bool
+	updateThumb bool
 )
 
 var PostCmd = &cobra.Command{
@@ -77,7 +78,10 @@ var PostCmd = &cobra.Command{
 		if clear {
 			clearPost()
 		}
-		if !list && !clear {
+		if updateThumb {
+			updateThumbnails()
+		}
+		if !list && !clear && !updateThumb {
 			uploadNews()
 			uploadAttachments()
 		}
@@ -87,6 +91,7 @@ var PostCmd = &cobra.Command{
 func init() {
 	PostCmd.Flags().BoolVarP(&list, "list", "l", false, "See post list")
 	PostCmd.Flags().BoolVarP(&clear, "clear", "c", false, "Clear post list")
+	PostCmd.Flags().BoolVarP(&updateThumb, "thumb", "t", false, "Update thumbnails for posts")
 }
 
 // Post-list interface
@@ -310,7 +315,6 @@ func saveIDs(posts *[]int, path string) {
 }
 
 // Attach interface
-
 func uploadAttachments() {
 	color.Yellow("--- Upload Attachments ---")
 	config := Env.Config.GetStringMapString("wordpress")
@@ -394,6 +398,20 @@ func saveAttachment(attachments *[]Post, path string) {
 }
 
 // Thumbnail interface
+func updateThumbnails() {
+	color.Yellow("--- Update Thumbnails ---")
+	config := Env.Config.GetStringMapString("wordpress")
+	wpPath := checkFolder(config["path"])
+	workPath := checkFolder(path.Join(wpPath, "work"))
+	thumbPath := path.Join(workPath, "thumbnails.json")
+	thumbListGlobal := []Thumbnail{}
+	readThumbnails(thumbPath, &thumbListGlobal)
+	for _, thumb := range thumbListGlobal {
+		color.Red("post_id: %v", thumb)
+	}
+	lastID := getLastPostMetaID()
+	color.Yellow("%v", lastID)
+}
 func createThumbnail(postID int, src string) Thumbnail {
 	thumb := Thumbnail{
 		PostID:    postID,
@@ -438,6 +456,20 @@ func getLastPostID() int {
 	}
 
 	return lastPost.ID
+}
+func getLastPostMetaID() int {
+	db := checkDB()
+	lastPostMeta := Thumbnail{}
+
+	err := db.Table("wp_postmeta").Order("meta_id desc").First(&lastPostMeta)
+	if err.GetErrors() != nil {
+		fmt.Errorf("DB: %v", err.GetErrors())
+	}
+	if err.RecordNotFound() {
+		fmt.Errorf("record not found")
+	}
+
+	return lastPostMeta.MetaID
 }
 func checkDB() *gorm.DB {
 	if Env.Database == nil {
