@@ -83,7 +83,7 @@ var PostCmd = &cobra.Command{
 		}
 		if !list && !clear && !updateThumb {
 			uploadNews()
-			uploadAttachments()
+			//uploadAttachments()
 		}
 	},
 }
@@ -396,21 +396,40 @@ func saveAttachment(attachments *[]Post, path string) {
 		fmt.Errorf("Can't create file. ")
 	}
 }
+func getAttachID(id int) {
+	db := checkDB()
+
+	attachment := []Thumbnail{}
+	err := db.Table("wp_postmeta").Find(&attachment, "post_id = ?", id)
+	if err.GetErrors() != nil {
+		fmt.Errorf("DB: %v", err.GetErrors())
+	}
+	if err.RecordNotFound() {
+		fmt.Errorf("record not found")
+	}
+	color.Red("POST_META: %v", len(attachment))
+}
 
 // Thumbnail interface
 func updateThumbnails() {
 	color.Yellow("--- Update Thumbnails ---")
-	config := Env.Config.GetStringMapString("wordpress")
-	wpPath := checkFolder(config["path"])
-	workPath := checkFolder(path.Join(wpPath, "work"))
-	thumbPath := path.Join(workPath, "thumbnails.json")
-	thumbListGlobal := []Thumbnail{}
-	readThumbnails(thumbPath, &thumbListGlobal)
-	for _, thumb := range thumbListGlobal {
-		color.Red("post_id: %v", thumb)
-	}
-	lastID := getLastPostMetaID()
-	color.Yellow("%v", lastID)
+	//config := Env.Config.GetStringMapString("wordpress")
+	//wpPath := checkFolder(config["path"])
+	//workPath := checkFolder(path.Join(wpPath, "work"))
+	//thumbPath := path.Join(workPath, "thumbnails.json")
+	//thumbListGlobal := []Thumbnail{}
+	//readThumbnails(thumbPath, &thumbListGlobal)
+	//count := len(thumbListGlobal)
+	//bar := progressbar.New(count)
+	//lastID := getLastPostMetaID()
+	//for _, thumb := range thumbListGlobal {
+	//	bar.Add(1)
+	//	lastID = lastID + 1
+	//	color.Red("post_id: %v", thumb)
+	//}
+	//color.Yellow("%v", lastID)
+	attachID := 2048
+	getAttachID(attachID)
 }
 func createThumbnail(postID int, src string) Thumbnail {
 	thumb := Thumbnail{

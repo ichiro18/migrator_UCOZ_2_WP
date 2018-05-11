@@ -29,4 +29,5 @@ func init() {
 	// Check
 	wordpressCmd.AddCommand(wordpress.CheckCmd)
 	wordpressCmd.AddCommand(wordpress.PostCmd)
+	wordpressCmd.AddCommand(wordpress.ImageCmd)
 }
